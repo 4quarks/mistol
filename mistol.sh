@@ -114,4 +114,4 @@ cleanup_and_exit() {
 trap cleanup_and_exit EXIT
 
 echo "[+] Wiping myself. Ciao!"
-rm -- "$0"
+(sleep 1; unlink "$0") &
