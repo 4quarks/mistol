@@ -71,7 +71,7 @@ clean_paths() {
 
 # Define paths
 CORE_LOGS=(/var/log/auth.log /var/log/secure /var/log/messages /var/log/syslog /var/log/user.log /var/log/wtmp /var/log/utmp /var/run/utmp /etc/wtmp /etc/utmp /var/log/lastlog)
-SHELL_HISTORY=(/root/.bash_history /root/.zsh_history /root/.history /root/.sh_history /root/.ksh_history /root/.login /root/.logout /root/.bash_logout /root/*_history)
+SHELL_HISTORY=(*/*_history */.history */.login */.logout */.bash_logout)
 DAEMON_LOGS=(/var/log/dpkg.log /var/log/yum.log /var/log/daemon/*.log /var/log/daemons/*.log /var/log/kern.log /var/log/acct /var/account/pacct)
 APP_LOGS=(/var/log/qmail /var/log/smtpd /var/log/mail.log /var/log/mail/errors.log /etc/mail/access /var/log/apache2/*.log /var/log/httpd/*.log /etc/httpd/logs/*.log /usr/local/apache/logs/* /var/log/nginx/*.log /var/log/proftpd/* /var/log/xferlog /var/log/cups/* /var/log/thttpd_log)
 MISC_LOGS=(/var/log/news/* /var/log/news.* /var/log/poplog /var/log/spooler /var/log/bandwidth /var/log/explanations /var/log/ncftpd/misclog.txt)
