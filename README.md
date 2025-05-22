@@ -20,10 +20,33 @@ MITRE ATT&CK T1070.002 — Indicator Removal on Host: Clear Linux or Mac System 
 
 ---
 
-## Usage
+Here’s an improved version of your usage documentation for clarity, precision, and better structure:
 
-```bash
-# Launch stealth shell (auto-cleans on exit)
-chmod +x ./mistol.sh
-sudo  ./mistol.sh --dry-run
-```
+---
+
+## Usage Guide
+
+1. Launch a fresh shell environment that does **not load history or profiles**, avoiding in-memory command traces:
+
+   ```bash
+   bash --norc --noprofile
+   ```
+
+3. Avoid using remote downloads (to prevent network logging). Instead, paste the script manually:
+
+   ```bash
+   vi mistol.sh
+   ```
+
+4. Execute MISTOL in dry-run mode (optional)
+
+   ```bash
+   chmod +x mistol.sh
+   ./mistol.sh --dry-run
+   ```
+
+5. Close the temporary shell to discard in-memory history:
+
+   ```bash
+   exit
+   ```
