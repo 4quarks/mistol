@@ -1,0 +1,2 @@
+# mistol
+Wiping Linux Logs
